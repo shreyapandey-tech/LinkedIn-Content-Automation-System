@@ -1,0 +1,32 @@
+
+services:
+  linkedin-sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: linkedin-sql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "YourStrongPassword@123"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    restart: unless-stopped
+
+  linkedin-app:
+    build:
+      context: .
+      dockerfile: LinkedInContentAutomationSystem/Dockerfile
+    image: linkedin-content-automation:production
+    container_name: linkedin-app
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Server=linkedin-sql,1433;Database=LinkedInAutomation;User Id=sa;Password=YourStrongPassword@123;TrustServerCertificate=True;"
+    depends_on:
+      - linkedin-sql
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:

@@ -1,0 +1,158 @@
+@model IEnumerable<LinkedInContentAutomationSystem.Models.ScheduledPost>
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="container-fluid mt-4 px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>LinkedIn SaaS Dashboard</h2>
+        <form asp-action="SyncContent" method="post">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-arrow-repeat"></i> Sync Content Folder
+            </button>
+        </form>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Calendar Column -->
+        <div class="col-md-7 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Content Calendar (Drag & Drop)</h5>
+                </div>
+                <div class="card-body">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- List Column -->
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Scheduled Posts</h5>
+                </div>
+                <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Day</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        No posts found. Please sync the content folder.
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var post in Model)
+                            {
+                                <tr>
+                                    <td><strong>Day @post.DayNumber</strong></td>
+                                    <td>@post.ScheduledDate.ToShortDateString()</td>
+                                    <td>
+                                        @if (post.Status == "Pending")
+                                        {
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        }
+                                        else if (post.Status == "Posted")
+                                        {
+                                            <span class="badge bg-success">Posted</span>
+                                        }
+                                        else if (post.Status == "Failed")
+                                        {
+                                            <span class="badge bg-danger">Failed</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">@post.Status</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <form method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@post.Id" />
+                                            @if (post.Status == "Pending" || post.Status == "Failed")
+                                            {
+                                                <button type="submit" asp-action="PostNow" class="btn btn-sm btn-success p-1" title="Post Now">
+                                                    ▶️
+                                                </button>
+                                            }
+                                            <button type="submit" asp-action="ResetStatus" class="btn btn-sm btn-outline-secondary p-1" title="Reset" onclick="return confirm('Reset this post?');">
+                                                🔄
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                editable: true,
+                droppable: true,
+                events: '/Home/GetPosts',
+                eventDrop: function(info) {
+                    // When an event is dragged and dropped
+                    var eventId = info.event.id;
+                    var newDate = info.event.startStr;
+                    
+                    fetch(`/Home/UpdatePostDate?id=${eventId}&newDate=${newDate}`, {
+                        method: 'POST'
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            alert('Failed to update date. Reverting.');
+                            info.revert();
+                        } else {
+                            // Reload the page to refresh the list view as well
+                            window.location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error updating date.');
+                        info.revert();
+                    });
+                }
+            });
+            calendar.render();
+        });
+    </script>
+}
