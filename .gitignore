@@ -1,6 +1,29 @@
+<<<<<<< HEAD
 .vs/
 [Bb]in/
 [Oo]bj/
 [Ll]ogs/
 *.user
 PlaywrightProfile/
+=======
+# Visual Studio & Rider
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Sensitive user data & Playwright sessions
+PlaywrightProfile/
+appsettings.Development.json
+>>>>>>> bfe277edcbd2d6285694c1766748f1d3ec4e6e87
